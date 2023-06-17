@@ -50,14 +50,3 @@ def home():
 def get_data():
     hotel_names = get_nearby_hotels(latitude, longitude)
     return jsonify(hotel_names=hotel_names)
-
-
-@views.route('/process_form', methods=['POST'])
-def process_form():
-    place_ids = request.form.get('arr[]')
-
-    # Process the form data
-    # ...
-
-    # Return a response
-    return 'Form data received'
