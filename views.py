@@ -28,9 +28,11 @@ def get_nearby_hotels(latitude, longitude):
             # return names
             place_ids = [hotel.get('place_id') for hotel in hotels]
             names = [hotel.get('name') for hotel in hotels]
+            lats = [hotel.get("geometry").get("location").get("lat") for hotel in hotels]
+            lngs = [hotel.get("geometry").get("location").get("lng") for hotel in hotels]
             hotels_dict = []
             for i in range(len(place_ids)):
-                hotels_dict.append({"place_id": place_ids[i], "name": names[i]})
+                hotels_dict.append({"place_id": place_ids[i], "name": names[i], "lat": lats[i], "lng": lngs[i]})
             return hotels_dict
         else:
             print('No nearby hotels found.')
