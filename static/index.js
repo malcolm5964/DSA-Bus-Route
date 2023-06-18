@@ -19,7 +19,7 @@ function handleNumberChange() {
         var formElement = document.createElement('div');
         formElement.className = 'mb-3';
         formElement.innerHTML = '<label for="hotel' + (formCount + 1) + '" class="form-label">Hotel ' + (formCount + 1) + ':</label>' +
-            '<select class="form-select" id="hotel' + (formCount + 1) + '" onchange="addPin()">' +
+            '<select class="form-select" id="hotel' + (formCount + 1) + '" name="hotels" onchange="addPin()">' +
             '<option selected value="null"> -- select an option -- </option>';
 
         formElement.innerHTML += '</select>';
@@ -52,7 +52,8 @@ function getHotels() {
                         if (!place_ids.includes(dict.place_id)) {
                             var optionElement = document.createElement('option');
                             optionElement.textContent = dict.name;
-                            optionElement.value = dict.place_id;
+                            //optionElement.value = dict.place_id;
+                            optionElement.value = `${dict.name},${dict.lat},${dict.lng}`;
                             select.appendChild(optionElement);
                         }
                     });

@@ -57,13 +57,10 @@ def get_data():
 
 @views.route('/process_form', methods=['POST'])
 def process_form():
-    gay = request.form
-    place_ids = request.form.getlist('hotels')
-    test = {}
+    hotel_list = request.form.getlist('hotels')
 
-    number_of_hotel = len(place_ids)
-    distance_matrix = np.empty((number_of_hotel, number_of_hotel))
-    LatLongDict = {}
+    number_of_hotel = len(hotel_list)
+    distance_matrix = np.empty((number_of_hotel, number_of_hotel))  #Store distance between hotels
 
     #Using onemap part
 
@@ -77,41 +74,26 @@ def process_form():
     token = response.json()['access_token']
 
 
-    #Store Lat and Long for hotels in LatLongDict
-    for index, hotel in enumerate(place_ids):
-
-        SearchText = hotel
-        LatLongUrl= f'https://developers.onemap.sg/commonapi/search?searchVal={SearchText}&returnGeom=Y&getAddrDetails=Y&pageNum=1'
-        
-        response = requests.get(LatLongUrl)
-        data = response.json()
-
-        if 'results' in data and len(data['results']) > 0:
-            latitude = data['results'][0]['LATITUDE']
-            longitude = data['results'][0]['LONGITUDE']
-
-            LatLongDict[index] = {
-                'hotelName': place_ids[index],
-                'latitude': latitude,
-                'longitude': longitude
-            }
-
     #Calculate distance between hotels and place into distance_matrix
-    for key1, value1 in LatLongDict.items():
-        for key2, value2 in LatLongDict.items():
-            if key1 == key2:
-                continue
-            startLat = value1['latitude']
-            startLong = value1['longitude']
-            endLat = value2['latitude']
-            endLong = value2['longitude']
+    for index1, hotel1 in enumerate(hotel_list):
+        for index2, hotel2 in enumerate(hotel_list):
+            if hotel1 == hotel2:
+                distance_matrix[index1][index2] = 0
+            startLat = hotel1.split(",")[1]
+            startLng = hotel1.split(",")[2]
+            endLat = hotel2.split(",")[1]
+            endLng = hotel2.split(",")[2]
 
-            DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLong}&end={endLat},{endLong}&routeType=drive&token={token}'
+            DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLng}&end={endLat},{endLng}&routeType=drive&token={token}'
             response = requests.get(DistanceUrl)
             data = response.json()
-           
 
-    
+            distance_matrix[index1][index2] = data['route_summary']['total_distance']
+            
+    #Just for checking
+    for row in distance_matrix:
+        for element in row:
+            print(element, end="\t")
+        print()
 
-
-    return LatLongDict
+    return distance_matrix.tolist()
