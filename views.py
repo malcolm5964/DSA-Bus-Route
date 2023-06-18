@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 import requests
+import numpy as np
 
 views = Blueprint(__name__, "views")
 
@@ -54,10 +55,61 @@ def get_data():
 
 @views.route('/process_form', methods=['POST'])
 def process_form():
-    place_ids = request.form.get('arr[]')
+    gay = request.form
+    place_ids = request.form.getlist('hotels')
+    test = {}
 
-    # Process the form data
-    # ...
+    number_of_hotel = len(place_ids)
+    distance_matrix = np.empty((number_of_hotel, number_of_hotel))
+    LatLongDict = {}
 
-    # Return a response
-    return 'Form data received'
+    #Using onemap part
+
+    #Getting access token
+    url='https://developers.onemap.sg/privateapi/auth/post/getToken'
+    account_details = {
+        "email": "malcolm5964@gmail.com",
+        "password": "@T0012069zmalcolm"
+    }
+    response = requests.post(url, json=account_details)
+    token = response.json()['access_token']
+
+
+    #Store Lat and Long for hotels in LatLongDict
+    for index, hotel in enumerate(place_ids):
+
+        SearchText = hotel
+        LatLongUrl= f'https://developers.onemap.sg/commonapi/search?searchVal={SearchText}&returnGeom=Y&getAddrDetails=Y&pageNum=1'
+        
+        response = requests.get(LatLongUrl)
+        data = response.json()
+
+        if 'results' in data and len(data['results']) > 0:
+            latitude = data['results'][0]['LATITUDE']
+            longitude = data['results'][0]['LONGITUDE']
+
+            LatLongDict[index] = {
+                'hotelName': place_ids[index],
+                'latitude': latitude,
+                'longitude': longitude
+            }
+
+    #Calculate distance between hotels and place into distance_matrix
+    for key1, value1 in LatLongDict.items():
+        for key2, value2 in LatLongDict.items():
+            if key1 == key2:
+                continue
+            startLat = value1['latitude']
+            startLong = value1['longitude']
+            endLat = value2['latitude']
+            endLong = value2['longitude']
+
+            DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLong}&end={endLat},{endLong}&routeType=drive&token={token}'
+            response = requests.get(DistanceUrl)
+            data = response.json()
+           
+
+    
+
+
+    return LatLongDict
