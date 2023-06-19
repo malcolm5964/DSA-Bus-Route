@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, jsonify, request
 import requests
 import numpy as np
+import itertools
+import networkx as nx
+import json
 
 views = Blueprint(__name__, "views")
 
@@ -42,6 +45,33 @@ def get_nearby_hotels(latitude, longitude):
         print('Response:', response.text)
 
 
+def tsp(graph, start_node):
+    # Generate all possible permutations of the nodes
+    nodes = list(graph.keys())
+    permutations = list(itertools.permutations(nodes))
+
+    min_distance = float('inf')  # Initialize with infinity
+    optimal_path = []
+
+    # Iterate through each permutation and calculate the total distance
+    for path in permutations:
+        current_distance = 0
+        prev_node = start_node
+
+        for node in path:
+            current_distance += graph[prev_node][node]
+            prev_node = node
+
+        current_distance += graph[prev_node][start_node]
+
+        # Update the minimum distance and optimal path if a shorter path is found
+        if current_distance < min_distance:
+            min_distance = current_distance
+            optimal_path = path
+
+    return optimal_path, min_distance
+
+
 @views.route("/")  # this is to go to different types of pages url
 def home():
     test = get_nearby_hotels(latitude, longitude)
@@ -58,9 +88,11 @@ def get_data():
 @views.route('/process_form', methods=['POST'])
 def process_form():
     hotel_list = request.form.getlist('hotels')
+    hotel_list.insert(0, "Changi Airport T3,1.3545752,103.985405146631")
 
-    number_of_hotel = len(hotel_list)
-    distance_matrix = np.empty((number_of_hotel, number_of_hotel))  #Store distance between hotels
+    distance_matrix = {} #Store distance between hotels in a dictionary
+    for hotel in hotel_list:
+        distance_matrix[hotel.split(",")[0]] = {}
 
     #Using onemap part
 
@@ -78,7 +110,7 @@ def process_form():
     for index1, hotel1 in enumerate(hotel_list):
         for index2, hotel2 in enumerate(hotel_list):
             if hotel1 == hotel2:
-                distance_matrix[index1][index2] = 0
+                distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = 0
             startLat = hotel1.split(",")[1]
             startLng = hotel1.split(",")[2]
             endLat = hotel2.split(",")[1]
@@ -88,12 +120,17 @@ def process_form():
             response = requests.get(DistanceUrl)
             data = response.json()
 
-            distance_matrix[index1][index2] = data['route_summary']['total_distance']
+            distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = data['route_summary']['total_distance']
             
-    #Just for checking
-    for row in distance_matrix:
-        for element in row:
-            print(element, end="\t")
-        print()
 
-    return distance_matrix.tolist()
+
+
+    #Calculate route to take "BRUTE FORCE METHOD"
+    optimal_path, min_distance = tsp(distance_matrix, 'Changi Airport T3')            
+    print("Optimal Path:", optimal_path)
+    print("Minimum Distance:", min_distance)
+
+    #Just to test/print
+    pretty_print = jsonify(json.loads(json.dumps(distance_matrix, indent=4)))
+    
+    return f"Optimal Path: {optimal_path}"
