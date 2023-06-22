@@ -4,6 +4,7 @@ import numpy as np
 import itertools
 import networkx as nx
 import json
+import polyline
 
 views = Blueprint(__name__, "views")
 
@@ -44,7 +45,7 @@ def get_nearby_hotels(latitude, longitude):
         print('Error occurred while retrieving nearby hotels.')
         print('Response:', response.text)
 
-
+#Algorithm to get route
 def tsp(graph, start_node):
     # Generate all possible permutations of the nodes
     nodes = list(graph.keys())
@@ -71,6 +72,16 @@ def tsp(graph, start_node):
 
     return optimal_path, min_distance
 
+#Decode route geometry
+def decode_route_geometry(encoded):
+    if encoded:
+        latlngs = polyline.decode(encoded, precision=6)
+        latlngs = [[lat*10, lng*10] for lat, lng in latlngs]
+        # Do something with latlngs
+        return latlngs
+    else:
+        return None
+
 
 @views.route("/")  # this is to go to different types of pages url
 def home():
@@ -88,7 +99,8 @@ def get_data():
 @views.route('/process_form', methods=['POST'])
 def process_form():
     hotel_list = request.form.getlist('hotels')
-    hotel_list.insert(0, "Changi Airport T3,1.3545752,103.985405146631")
+    hotel_list.insert(0, "Changi Airport T3,1.3554054603062502,103.98712226757137")
+    latlngs = ""
 
     distance_matrix = {} #Store distance between hotels in a dictionary
     for hotel in hotel_list:
@@ -111,19 +123,27 @@ def process_form():
         for index2, hotel2 in enumerate(hotel_list):
             if hotel1 == hotel2:
                 distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = 0
+                continue
             startLat = hotel1.split(",")[1]
             startLng = hotel1.split(",")[2]
             endLat = hotel2.split(",")[1]
             endLng = hotel2.split(",")[2]
 
+            #Get distance between hotel
             DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLng}&end={endLat},{endLng}&routeType=drive&token={token}'
             response = requests.get(DistanceUrl)
             data = response.json()
-
-            distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = data['route_summary']['total_distance']
             
+            #Place distance between hotels into matrix
+            distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = data['route_summary']['total_distance']
 
+            #Testing drawing (Currently only draw from airport to first hotel)
+            if index1==0 and index2==1:
+                route_geometry = data['route_geometry'] #Route geometry is encoded route drawing info
+                latlngs = decode_route_geometry(route_geometry) #Decode and get an array of lat and lng
+                print(latlngs)
 
+    
 
     #Calculate route to take "BRUTE FORCE METHOD"
     optimal_path, min_distance = tsp(distance_matrix, 'Changi Airport T3')            
@@ -133,4 +153,4 @@ def process_form():
     #Just to test/print
     pretty_print = jsonify(json.loads(json.dumps(distance_matrix, indent=4)))
     
-    return f"Optimal Path: {optimal_path}"
+    return render_template('map.html', latlngs=latlngs) #Print on map

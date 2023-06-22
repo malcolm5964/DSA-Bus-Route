@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 400px;"></div>
+    <script type="text/javascript">
+        var latlngs = {{ latlngs|safe }}; //Bring No error
+        console.log(latlngs);
+
+        var map = L.map('map').setView([1.3545752, 103.985405146631], 13); //Set view of map
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+            maxZoom: 18
+        }).addTo(map); 
+
+        L.polyline(latlngs, { color: 'blue', weight: 5 }).addTo(map); //Draw the latlng onto map
+    </script>
+</body>
+</html>
