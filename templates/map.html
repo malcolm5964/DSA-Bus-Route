@@ -1,23 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <title>Google Maps</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAfUwt_z2cVWnAnb_F3y0Ot4TNinGU1edg&libraries=geometry"></script>
 </head>
 <body>
-    <div id="map" style="height: 400px;"></div>
+    <div id="map"></div>
     <script type="text/javascript">
-        var latlngs = {{ latlngs|safe }}; //Bring No error
+        var latlngs = {{ latlngs|safe }};
         console.log(latlngs);
 
-        var map = L.map('map').setView([1.3545752, 103.985405146631], 13); //Set view of map
+        var map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 1.3545752, lng: 103.985405146631 },
+            zoom: 13
+        });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
-            maxZoom: 18
-        }).addTo(map); 
+        var path = latlngs.map(function(coord) {
+            return new google.maps.LatLng(coord[0], coord[1]);
+        });
 
-        L.polyline(latlngs, { color: 'blue', weight: 5 }).addTo(map); //Draw the latlng onto map
+        var polyline = new google.maps.Polyline({
+            path: path,
+            strokeColor: 'blue',
+            strokeWeight: 5
+        });
+
+        polyline.setMap(map);
     </script>
 </body>
 </html>

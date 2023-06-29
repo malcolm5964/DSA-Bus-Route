@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
+from TSP_function import tsp
 import requests
 import numpy as np
-import itertools
 import networkx as nx
 import json
 import polyline
@@ -45,32 +45,7 @@ def get_nearby_hotels(latitude, longitude):
         print('Error occurred while retrieving nearby hotels.')
         print('Response:', response.text)
 
-#Algorithm to get route
-def tsp(graph, start_node):
-    # Generate all possible permutations of the nodes
-    nodes = list(graph.keys())
-    permutations = list(itertools.permutations(nodes))
 
-    min_distance = float('inf')  # Initialize with infinity
-    optimal_path = []
-
-    # Iterate through each permutation and calculate the total distance
-    for path in permutations:
-        current_distance = 0
-        prev_node = start_node
-
-        for node in path:
-            current_distance += graph[prev_node][node]
-            prev_node = node
-
-        current_distance += graph[prev_node][start_node]
-
-        # Update the minimum distance and optimal path if a shorter path is found
-        if current_distance < min_distance:
-            min_distance = current_distance
-            optimal_path = path
-
-    return optimal_path, min_distance
 
 #Decode route geometry
 def decode_route_geometry(encoded):
@@ -150,7 +125,6 @@ def process_form():
     print("Optimal Path:", optimal_path)
     print("Minimum Distance:", min_distance)
 
-    #Just to test/print
-    pretty_print = jsonify(json.loads(json.dumps(distance_matrix, indent=4)))
+    
     
     return render_template('map.html', latlngs=latlngs) #Print on map
