@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from TSP_function import tsp
+from TSP_function import tsp_dp
 import requests
 import numpy as np
 import networkx as nx
@@ -75,11 +75,8 @@ def get_data():
 def process_form():
     hotel_list = request.form.getlist('hotels')
     hotel_list.insert(0, "Changi Airport T3,1.3554054603062502,103.98712226757137")
-    latlngs = ""
 
-    distance_matrix = {} #Store distance between hotels in a dictionary
-    for hotel in hotel_list:
-        distance_matrix[hotel.split(",")[0]] = {}
+    distance_matrix = [] #Store distance between hotels in a array
 
     #Using onemap part
 
@@ -95,9 +92,10 @@ def process_form():
 
     #Calculate distance between hotels and place into distance_matrix
     for index1, hotel1 in enumerate(hotel_list):
+        distance_matrix.append([]) #Append an array of distance between hotel1 to all other hotel to the distance_matrix
         for index2, hotel2 in enumerate(hotel_list):
             if hotel1 == hotel2:
-                distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = 0
+                distance_matrix[index1].append(0)
                 continue
             startLat = hotel1.split(",")[1]
             startLng = hotel1.split(",")[2]
@@ -109,22 +107,36 @@ def process_form():
             response = requests.get(DistanceUrl)
             data = response.json()
             
-            #Place distance between hotels into matrix
-            distance_matrix[hotel1.split(",")[0]][hotel2.split(",")[0]] = data['route_summary']['total_distance']
+            #Place distance between hotels into array matrix
+            distance_matrix[index1].append(data['route_summary']['total_distance'])
 
-            #Testing drawing (Currently only draw from airport to first hotel)
-            if index1==0 and index2==1:
-                route_geometry = data['route_geometry'] #Route geometry is encoded route drawing info
-                latlngs = decode_route_geometry(route_geometry) #Decode and get an array of lat and lng
-                print(latlngs)
 
-    
-
-    #Calculate route to take "BRUTE FORCE METHOD"
-    optimal_path, min_distance = tsp(distance_matrix, 'Changi Airport T3')            
+    #Calculate route to take BACK TRACKING + DYNAMIC PROGRAMMING
+    print(distance_matrix)
+    min_distance, optimal_path = tsp_dp(distance_matrix, 0)            
     print("Optimal Path:", optimal_path)
     print("Minimum Distance:", min_distance)
 
+
+    #Get route geometry for optimal path and place them into latlngs array
+    latlngs = []
+    for i in range(len(optimal_path) -1):
+        hotel1 = hotel_list[optimal_path[i]]
+        hotel2 = hotel_list[optimal_path[i+1]]
+
+        startLat = hotel1.split(",")[1]
+        startLng = hotel1.split(",")[2]
+        endLat = hotel2.split(",")[1]
+        endLng = hotel2.split(",")[2]
+
+        DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLng}&end={endLat},{endLng}&routeType=drive&token={token}'
+        response = requests.get(DistanceUrl)
+        data = response.json()
     
+        route_geometry = data['route_geometry']
+        latlng = decode_route_geometry(route_geometry)
+        latlngs.append(latlng)
     
+
+
     return render_template('map.html', latlngs=latlngs) #Print on map

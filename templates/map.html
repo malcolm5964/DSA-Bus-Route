@@ -11,22 +11,31 @@
         var latlngs = {{ latlngs|safe }};
         console.log(latlngs);
 
+        //Set map zoom and position
         var map = new google.maps.Map(document.getElementById('map'), {
             center: { lat: 1.3545752, lng: 103.985405146631 },
             zoom: 13
         });
 
-        var path = latlngs.map(function(coord) {
-            return new google.maps.LatLng(coord[0], coord[1]);
-        });
+        //Colors for route
+        var colors = ['blue', 'red', 'green', 'purple', 'orange'];
 
-        var polyline = new google.maps.Polyline({
-            path: path,
-            strokeColor: 'blue',
-            strokeWeight: 5
-        });
+        //Loop through latlngs array and draw each latlng
+        for(let i=0; i< latlngs.length; i++) {
 
-        polyline.setMap(map);
+            var path = latlngs[i].map(function(coord) {
+                return new google.maps.LatLng(coord[0], coord[1]);
+            });
+
+            var polyline = new google.maps.Polyline({
+                path: path,
+                strokeColor: colors[i % colors.length],
+                strokeWeight: 5
+            });
+        
+            polyline.setMap(map);
+        }
+
     </script>
 </body>
 </html>
