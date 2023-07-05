@@ -1,41 +1,113 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Google Maps</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAfUwt_z2cVWnAnb_F3y0Ot4TNinGU1edg&libraries=geometry"></script>
-</head>
-<body>
-    <div id="map"></div>
-    <script type="text/javascript">
-        var latlngs = {{ latlngs|safe }};
-        console.log(latlngs);
+    <head>
+        <title>Google Maps</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAfUwt_z2cVWnAnb_F3y0Ot4TNinGU1edg&libraries=geometry"></script>
+        <!-- Bootstrap files-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    </head>
 
-        //Set map zoom and position
-        var map = new google.maps.Map(document.getElementById('map'), {
-            center: { lat: 1.3545752, lng: 103.985405146631 },
-            zoom: 13
-        });
+    <body>
+        <div id="map"></div>
 
-        //Colors for route
-        var colors = ['blue', 'red', 'green', 'purple', 'orange'];
+        <!--Off Canvas Button-->
+        <button id="offcanvas" class="btn btn-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasExample" aria-controls="offcanvasExample">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
+                <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/>
+            </svg>
+        </button>
 
-        //Loop through latlngs array and draw each latlng
-        for(let i=0; i< latlngs.length; i++) {
+        <!--Off Canvas-->
+        <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+            <div class="offcanvas-header">
+              <h5 class="offcanvas-title text-center" id="offcanvasExampleLabel">Routes</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body" id="offcanvasBody">
+                <!--Container to place more routes-->
+            </div>
+        </div>
 
-            var path = latlngs[i].map(function(coord) {
-                return new google.maps.LatLng(coord[0], coord[1]);
+
+        <!--Scripts-->
+        <script type="text/javascript">
+            var latlngs = {{ latlngs|safe }};
+            
+            //Set map zoom and position
+            var map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 1.3545752, lng: 103.985405146631 },
+                zoom: 13
             });
 
-            var polyline = new google.maps.Polyline({
-                path: path,
-                strokeColor: colors[i % colors.length],
-                strokeWeight: 5
-            });
-        
-            polyline.setMap(map);
-        }
+            //Code to put the btn on google map
+            const offcanvasBtn = document.getElementById('offcanvas')
+            map.controls[google.maps.ControlPosition.LEFT_CENTER].push(offcanvasBtn)
 
-    </script>
-</body>
+            //Colors for route
+            var colors = ['blue', 'red', 'green', 'purple', 'orange'];
+
+            //Loop through latlngs array and draw each latlng
+            for(let i=0; i< latlngs.length; i++) {
+
+                //Get relevant info from latlng first array
+                var startpoint = latlngs[i][0][0];
+                var endpoint = latlngs[i][0][1];
+                var time = latlngs[i][0][2];
+                var instructions = latlngs[i][0][3].map(instruction => instruction[9]);
+
+                //Drawing latlng *Slice out first array(use to store route info)
+                var path = latlngs[i].slice(1).map(function(coord) {
+                    return new google.maps.LatLng(coord[0], coord[1]);
+                });
+
+                var polyline = new google.maps.Polyline({
+                    path: path,
+                    strokeColor: colors[i % colors.length],
+                    strokeWeight: 3
+                });
+            
+                polyline.setMap(map);
+
+                //Inserting route info into offcanvas
+                let offcanvasBody =  document.getElementById("offcanvasBody");
+                let routeInfo = `
+                    <!--New route info-->
+                    <div>
+                    <!--Route header-->
+                    <div>
+                        <p class="d-flex justify-content-between">
+                            <span><span class="text-primary">${startpoint}</span> to <span class="text-primary">${endpoint}</span> </span>
+                            <span class="text-success">${time}min</span>
+                        </p>
+                    </div>
+                    <!--Route Detail-->
+                    <button class="btn btn-link text-decoration-none route-details-btn" type="button" data-bs-toggle="collapse" data-bs-target="#routeDetails${i}" aria-expanded="false" aria-controls="routeDetails">
+                        Route Details
+                    </button>
+                    <div class="collapse mt-3" id="routeDetails${i}"> 
+                        <ul>
+                    `
+
+                    instructions.forEach(instruction => {
+                        routeInfo += `<li>${instruction}</li>`;
+                    });
+
+                    routeInfo += `
+                        </ul>
+                        </div>
+
+                        <hr style="border-top: 2px solid rgb(0, 0, 0);">
+                        </div>
+                    `
+
+                    offcanvasBody.innerHTML += routeInfo;   
+            }
+
+
+
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" integrity="sha384-fbbOQedDUMZZ5KreZpsbe1LCZPVmfTnH7ois6mU1QK+m14rQ1l2bGBq41eYeM/fS" crossorigin="anonymous"></script>
+    </body>
 </html>

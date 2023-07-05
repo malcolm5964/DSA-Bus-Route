@@ -5,5 +5,22 @@ html, body {
 }
 
 #map {
-    height: 100vh;
+    height: 100%;
+    position: relative;
 }
+
+#offcanvasButton {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.btn-link.route-details-btn {
+    padding: 0;
+    color: black;
+  }
+
+
+
