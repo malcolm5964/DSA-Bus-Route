@@ -2,6 +2,7 @@ import itertools
 import sys
 from itertools import permutations
 
+#OLD CODE
 def tsp_dp(graph, start):
     n = len(graph)
     all_sets = 2**n

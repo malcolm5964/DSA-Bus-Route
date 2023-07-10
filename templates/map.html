@@ -53,8 +53,8 @@
                 //Get relevant info from latlng first array
                 var startpoint = latlngs[i][0][0];
                 var endpoint = latlngs[i][0][1];
-                var time = latlngs[i][0][2];
-                var instructions = latlngs[i][0][3].map(instruction => instruction[9]);
+                var time = 360;
+                var instructions = ["test", "test2"];
 
                 //Drawing latlng *Slice out first array(use to store route info)
                 var path = latlngs[i].slice(1).map(function(coord) {
@@ -77,8 +77,8 @@
                     <!--Route header-->
                     <div>
                         <p class="d-flex justify-content-between">
-                            <span><span class="text-primary">${startpoint}</span> to <span class="text-primary">${endpoint}</span> </span>
-                            <span class="text-success">${time}min</span>
+                            <span><span style="color:${colors[i]};">${startpoint}</span> to <span style="color:${colors[i]};">${endpoint}</span> </span>
+                            <span class="text-success">${Math.round(time / 60)}min</span>
                         </p>
                     </div>
                     <!--Route Detail-->

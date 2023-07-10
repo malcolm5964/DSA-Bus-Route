@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, jsonify, request
 from TSP_function import tsp_dp
+from algorithms import find_shortest_path, haversine
 from shapely.geometry import Point, LineString
 import requests
 import numpy as np
@@ -72,6 +73,120 @@ def get_data():
     return jsonify(hotel_names=hotel_names)
 
 
+
+
+@views.route('/process_form', methods=['POST'])
+def process_form():
+    #Get list of hotel to visit
+    hotel_list = request.form.getlist('hotels')
+    #Insert Changi airport at start of list
+    hotel_list.insert(0, "Changi Airport T3,1.354247, 103.987324")
+
+    #Add hotel coordinates into array
+    hotel_coordinates = []
+    for hotel in hotel_list:
+        hotel_coordinates.append([hotel.split(",")[1], hotel.split(",")[2], hotel.split(",")[0]])
+
+    # Approximate coordinates for Singapore's bounding box
+    south = 1.15
+    west = 103.55
+    north = 1.47
+    east = 104.05
+
+    #Using overpass to get all relevant ways(Road data)
+    #Data will return 2 types of element WAYS(ROAD) and NODES
+    #WAYS ARE MADE FROM MULTIPLE NODES
+    #https://overpass-turbo.eu/s/1xco      Example of query
+    overpass_query = """
+    [out:json];
+    (
+      way[highway][highway != "footway"][highway!="steps"][access!="private"]({south},{west},{north},{east});  // Filter by highway tag within the bounding box
+    );
+    out body;
+    >;
+    out skel qt;
+    """.format(south=south, west=west, north=north, east=east)
+    response = requests.get("https://overpass-api.de/api/interpreter", params={"data": overpass_query})
+    data = response.json()
+
+
+    #BUILDING GRAPH
+    graph = nx.DiGraph()
+
+    #Get the node from the data and place onto a graph
+    for element in data["elements"]:
+        if element["type"] == "node":
+            node_id = element["id"]
+            lon = element["lon"]
+            lat = element["lat"]
+            graph.add_node(node_id, pos=(lat,lon))
+
+    #Check each ways and connect the nodes
+    for element in data["elements"]:
+        if element["type"] == "way":
+            node_ids = element["nodes"]
+            oneway = element["tags"].get("oneway")
+            for i in range(len(node_ids) - 1):
+                node1 = node_ids[i]
+                node2 = node_ids[i + 1]
+                lat1, lon1 = graph.nodes[node1]['pos']
+                lat2, lon2 = graph.nodes[node2]['pos']
+                dist = haversine(lon1, lat1, lon2, lat2)
+                if oneway == "yes":
+                    graph.add_edge(node1, node2, weight=dist)
+                else:
+                    graph.add_edge(node1, node2, weight=dist)
+                    graph.add_edge(node2, node1, weight=dist)
+
+
+    # Find the shortest path using Dijkstra's algorithm
+    shortest_path = find_shortest_path(graph, hotel_coordinates)
+
+    print(shortest_path)
+
+    return render_template('map.html', latlngs=shortest_path) #Print on map
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+""" OLD CODE
 @views.route('/process_form', methods=['POST'])
 def process_form():
     #Get list of hotel to visit
@@ -178,3 +293,5 @@ def process_form():
         latlngs.append(latlng)
 
     return render_template('map.html', latlngs=latlngs) #Print on map
+"""
+
