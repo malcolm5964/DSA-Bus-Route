@@ -1,12 +1,8 @@
 from flask import Blueprint, render_template, jsonify, request
-from TSP_function import tsp_dp
 from algorithms import find_shortest_path, haversine
-from shapely.geometry import Point, LineString
 import requests
-import numpy as np
 import networkx as nx
-import json
-import polyline
+
 
 views = Blueprint(__name__, "views")
 
@@ -46,18 +42,6 @@ def get_nearby_hotels(latitude, longitude):
     else:
         print('Error occurred while retrieving nearby hotels.')
         print('Response:', response.text)
-
-
-
-#Decode route geometry
-def decode_route_geometry(encoded):
-    if encoded:
-        latlngs = polyline.decode(encoded, precision=6)
-        latlngs = [[lat*10, lng*10] for lat, lng in latlngs]
-        # Do something with latlngs
-        return latlngs
-    else:
-        return None
 
 
 @views.route("/")  # this is to go to different types of pages url
@@ -109,9 +93,19 @@ def process_form():
     response = requests.get("https://overpass-api.de/api/interpreter", params={"data": overpass_query})
     data = response.json()
 
+    #Get speed bands
+    traffic_flow_url = f"http://datamall2.mytransport.sg/ltaodataservice/v3/TrafficSpeedBands"
+    headers = {
+        "Accept": "application/json",
+        "AccountKey": "BGf/iejfQ5+fOqFxkbLPuA=="
+    }
+    response = requests.get(traffic_flow_url, headers=headers)
+    traffic_flow_data = response.json()
+    traffic_flow_data = traffic_flow_data['value']
 
-    #BUILDING GRAPH
+    #BUILDING graph
     graph = nx.DiGraph()
+    #distanceGraph = nx.DiGraph()
 
     #Get the node from the data and place onto a graph
     for element in data["elements"]:
@@ -125,173 +119,36 @@ def process_form():
     for element in data["elements"]:
         if element["type"] == "way":
             node_ids = element["nodes"]
+            #Get speed for edge
+            if "maxspeed" in element["tags"]:
+                maxspeed = int(element["tags"]["maxspeed"])
+            else:
+                maxspeed = 50
+
             oneway = element["tags"].get("oneway")
             for i in range(len(node_ids) - 1):
                 node1 = node_ids[i]
                 node2 = node_ids[i + 1]
                 lat1, lon1 = graph.nodes[node1]['pos']
                 lat2, lon2 = graph.nodes[node2]['pos']
-                dist = haversine(lon1, lat1, lon2, lat2)
-                if oneway == "yes":
-                    graph.add_edge(node1, node2, weight=dist)
-                else:
-                    graph.add_edge(node1, node2, weight=dist)
-                    graph.add_edge(node2, node1, weight=dist)
 
+                #Get distance, time and optimal for edge
+                distance = haversine(lon1, lat1, lon2, lat2)
+                time = (distance / maxspeed) * 60
+                optimal = 0.5 * distance + 0.5 * time 
+
+
+                if oneway == "yes":
+                    graph.add_edge(node1, node2, distance=distance, time=time, optimal=optimal)
+
+                else:
+                    graph.add_edge(node1, node2, distance=distance, time=time, optimal=optimal)
+                    graph.add_edge(node2, node1, distance=distance, time=time, optimal=optimal)
 
     # Find the shortest path using Dijkstra's algorithm
-    shortest_path = find_shortest_path(graph, hotel_coordinates)
+    optimal_route_coordinates = find_shortest_path(graph, hotel_coordinates)
+    #distance_shortest_path = find_shortest_path(distanceGraph, hotel_coordinates)
 
-    print(shortest_path)
+    return render_template('map.html', optimalLatLngs=optimal_route_coordinates)  #Print on map
 
-    return render_template('map.html', latlngs=shortest_path) #Print on map
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-""" OLD CODE
-@views.route('/process_form', methods=['POST'])
-def process_form():
-    #Get list of hotel to visit
-    hotel_list = request.form.getlist('hotels')
-    #Insert Changi airport at start of list
-    hotel_list.insert(0, "Changi Airport T3,1.3554054603062502,103.98712226757137")
-
-    distance_matrix = [] #Store distance between hotels in a array
-
-    #USING ONEMAP API PART
-
-    #Getting access token
-    url='https://developers.onemap.sg/privateapi/auth/post/getToken'
-    account_details = {
-        "email": "malcolm5964@gmail.com",
-        "password": "@T0012069zmalcolm"
-    }
-    response = requests.post(url, json=account_details)
-    token = response.json()['access_token']
-
-
-    #Calculate distance between hotels and place into distance_matrix
-    for index1, hotel1 in enumerate(hotel_list):
-        distance_matrix.append([]) #Append an array of distance between hotel1 to all other hotel to the distance_matrix
-        for index2, hotel2 in enumerate(hotel_list):
-            if hotel1 == hotel2:
-                distance_matrix[index1].append(0)
-                continue
-            startLat = hotel1.split(",")[1]
-            startLng = hotel1.split(",")[2]
-            endLat = hotel2.split(",")[1]
-            endLng = hotel2.split(",")[2]
-
-            #Get distance between hotel
-            DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLng}&end={endLat},{endLng}&routeType=drive&token={token}'
-            response = requests.get(DistanceUrl)
-            data = response.json()
-            
-            #Place distance between hotels into array matrix
-            distance_matrix[index1].append(data['route_summary']['total_distance'])
-
-
-    #Calculate route to take BACK TRACKING + DYNAMIC PROGRAMMING
-    min_distance, optimal_path = tsp_dp(distance_matrix, 0)            
-    print("Optimal Path:", optimal_path) #[0, 3, 1, 2, 0] example of optimal path
-    print("Minimum Distance:", min_distance)
-
-
-    #Get incident coordinate
-    incident_url = f"http://datamall2.mytransport.sg/ltaodataservice/TrafficIncidents"
-    headers = {
-        "Accept": "application/json",
-        "AccountKey": "BGf/iejfQ5+fOqFxkbLPuA=="
-    }
-    response = requests.get(incident_url, headers=headers)
-    incident_data = response.json()
-    incident_data = incident_data['value']
-
-
-    #Get route geometry for optimal path and place them into latlngs array
-    latlngs = []
-
-    #Use optimal_path to get more details on the route.
-    for i in range(len(optimal_path) -1):
-        hotel1 = hotel_list[optimal_path[i]]
-        hotel2 = hotel_list[optimal_path[i+1]]
-
-        startName = hotel1.split(",")[0]
-        endName = hotel2.split(",")[0]
-        startLat = hotel1.split(",")[1]
-        startLng = hotel1.split(",")[2]
-        endLat = hotel2.split(",")[1]
-        endLng = hotel2.split(",")[2]
-
-        #User api to get route info again
-        DistanceUrl = f'https://developers.onemap.sg/privateapi/routingsvc/route?start={startLat},{startLng}&end={endLat},{endLng}&routeType=drive&token={token}'
-        response = requests.get(DistanceUrl)
-        data = response.json()
-        #Get the route geometry and decode(use to draw on map)
-        route_geometry = data['route_geometry']
-        latlng = decode_route_geometry(route_geometry)
-
-
-        #logic to check for traffic incident on latlng
-        route_line = LineString(latlng)
-
-        for incident in incident_data:
-            incident_lat = incident["Latitude"]
-            incident_lng = incident["Longitude"]
-            incident_message = incident["Message"]
-            incident_point = Point(incident_lat, incident_lng)
-            #Check if accident is on latlng
-            if route_line.distance(incident_point) < 0.001:
-                print(f"Incident at {startName} to {endName} Info: {incident_message}.")
-
-        #Get relevant route information such as startName, endName, time, and route_instruction and place into informationArray
-        #Place informationArray into latlng array to display at the sidebar later
-        route_instructions = data['route_instructions']
-        time = data['route_summary']['total_time']
-        informationArray = [startName, endName, time, route_instructions]
-        latlng.insert(0, informationArray)
-        print(latlng)
-        
-        latlngs.append(latlng)
-
-    return render_template('map.html', latlngs=latlngs) #Print on map
-"""
 

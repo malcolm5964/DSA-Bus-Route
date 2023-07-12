@@ -32,7 +32,7 @@
 
         <!--Scripts-->
         <script type="text/javascript">
-            var latlngs = {{ latlngs|safe }};
+            var optimalLatLngs = {{ optimalLatLngs|safe }};
             
             //Set map zoom and position
             var map = new google.maps.Map(document.getElementById('map'), {
@@ -47,17 +47,20 @@
             //Colors for route
             var colors = ['blue', 'red', 'green', 'purple', 'orange'];
 
-            //Loop through latlngs array and draw each latlng
-            for(let i=0; i< latlngs.length; i++) {
+            //Loop through LatLngs array and draw each latlng
+            for(let i=0; i< optimalLatLngs.length; i++) {
+
+                console.log(optimalLatLngs[i][0][2]);
 
                 //Get relevant info from latlng first array
-                var startpoint = latlngs[i][0][0];
-                var endpoint = latlngs[i][0][1];
-                var time = 360;
+                var startpoint = optimalLatLngs[i][0][0];
+                var endpoint = optimalLatLngs[i][0][1];
+                var time = optimalLatLngs[i][0][2];
+                var distance = optimalLatLngs[i][0][3];
                 var instructions = ["test", "test2"];
 
                 //Drawing latlng *Slice out first array(use to store route info)
-                var path = latlngs[i].slice(1).map(function(coord) {
+                var path = optimalLatLngs[i].slice(1).map(function(coord) {
                     return new google.maps.LatLng(coord[0], coord[1]);
                 });
 
@@ -76,29 +79,15 @@
                     <div>
                     <!--Route header-->
                     <div>
-                        <p class="d-flex justify-content-between">
-                            <span><span style="color:${colors[i]};">${startpoint}</span> to <span style="color:${colors[i]};">${endpoint}</span> </span>
-                            <span class="text-success">${Math.round(time / 60)}min</span>
-                        </p>
+                        <span><span style="color:${colors[i]};">${startpoint}</span> to <span style="color:${colors[i]};">${endpoint}</span> </span>
+                        <br>
+                        <span class="text-success">${Math.round(time)}min&nbsp;&nbsp;</span>
+                        <span class="text-success">${distance.toFixed(1)}KM</span>
                     </div>
                     <!--Route Detail-->
-                    <button class="btn btn-link text-decoration-none route-details-btn" type="button" data-bs-toggle="collapse" data-bs-target="#routeDetails${i}" aria-expanded="false" aria-controls="routeDetails">
-                        Route Details
-                    </button>
-                    <div class="collapse mt-3" id="routeDetails${i}"> 
-                        <ul>
-                    `
 
-                    instructions.forEach(instruction => {
-                        routeInfo += `<li>${instruction}</li>`;
-                    });
-
-                    routeInfo += `
-                        </ul>
-                        </div>
-
-                        <hr style="border-top: 2px solid rgb(0, 0, 0);">
-                        </div>
+                    <hr style="border-top: 2px solid rgb(0, 0, 0);">
+                    </div>
                     `
 
                     offcanvasBody.innerHTML += routeInfo;   

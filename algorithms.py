@@ -29,33 +29,57 @@ def find_nearest_node(lat, lon, graph):
             nearest_node = node
     return nearest_node
 
+
+def get_route_info(graph, optimal_sub_path, type):
+    total_info = 0
+    for i in range(len(optimal_sub_path) -1):
+        currentNode = optimal_sub_path[i]
+        nextNode = optimal_sub_path[i+1]
+        info = graph[currentNode][nextNode][type]
+        total_info += info
+    return total_info
+
+
 # ALGO 1 Create all permutation and find the shortest route
 #Finding shortest route use djikstra algo
 def find_shortest_path(graph, hotel_coordinates):
     num_hotels = len(hotel_coordinates)
-    path_coordinates = []
-    shortest_distance = float('inf')
+    optimal_route_coordinates = []  #[[Hotel1 to Hotel2 latlng][Hotel2 to Hotel3 latlng]....]
+    optimal_shortest_weight = float('inf')
+
     # Generate permutations of hotel visit order
     permutations = itertools.permutations(range(num_hotels))
     for permutation in permutations:
-        sub_path_coordinates = []
-        total_distance = 0.0
+        optimal_sub_path_coordinates = []
+        optimal_weight = 0.0
+
         for i in range(num_hotels - 1):
             hotel1 = hotel_coordinates[permutation[i]]
             hotel2 = hotel_coordinates[permutation[i + 1]]
             hotel1_node = find_nearest_node(hotel1[0], hotel1[1], graph)
             hotel2_node = find_nearest_node(hotel2[0], hotel2[1], graph)
+
             # Find the shortest path between two hotels
             if nx.has_path(graph, hotel1_node, hotel2_node):
-                sub_path = nx.shortest_path(graph, hotel1_node, hotel2_node, weight='weight') #Return the nodes from the shortest path
-                total_distance += nx.shortest_path_length(graph, hotel1_node, hotel2_node, weight='weight') #shortest_path_length() function is djikstra algo
-                hotelInfo =[[hotel_coordinates[permutation[i]][2],  hotel_coordinates[permutation[i+1]][2]]] #Create an array of hotel information [hotel1 name, hotel2 name]
-                sub_path_coordinates.append(hotelInfo + [[graph.nodes[node]['pos'][0], graph.nodes[node]['pos'][1]] for node in sub_path]) #Create an array(Route of all hotel) of array(Route between 2 hotel)
+
+                
+                optimal_weight += nx.shortest_path_length(graph, hotel1_node, hotel2_node, weight='optimal') #calculate shortest path with djikstra algo
+                optimal_sub_path = nx.shortest_path(graph, hotel1_node, hotel2_node, weight='optimal') #Return the nodes that make shortest path
+                optimal_distance = get_route_info(graph, optimal_sub_path, "distance") #Get the distance for optimal route
+                optimal_time = get_route_info(graph, optimal_sub_path, "time") #Get the time for optimal route
+
+                #Create an array of hotel information [hotel1 name, hotel2 name, time, distance]
+                optimalHotelInfo =[[hotel_coordinates[permutation[i]][2],  hotel_coordinates[permutation[i+1]][2], optimal_time, optimal_distance]] 
+                
+                #With the shortest path node, get the lat and lng to draw on map
+                optimal_sub_path_coordinates.append(optimalHotelInfo + [[graph.nodes[node]['pos'][0], graph.nodes[node]['pos'][1]] for node in optimal_sub_path]) 
+
         #Set new shortest distance
-        if total_distance < shortest_distance:
-            shortest_distance = total_distance
-            path_coordinates = sub_path_coordinates
-    return path_coordinates
+        if optimal_weight < optimal_shortest_weight:
+            optimal_shortest_weight = optimal_weight
+            optimal_route_coordinates = optimal_sub_path_coordinates
+
+    return optimal_route_coordinates
 
 
 #ALGO 2 Nearest Neighbor Algorithm
