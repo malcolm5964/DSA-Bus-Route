@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from algorithms import find_shortest_path, haversine
+from algorithms import find_shortest_path_permutation, find_shortest_path_neighbour, haversine
 import requests
 import networkx as nx
 
@@ -134,6 +134,10 @@ def process_form():
 
                 #Get distance, time and optimal for edge
                 distance = haversine(lon1, lat1, lon2, lat2)
+                #Add ERP cost
+                #if node1 == 6072957606 and node2 == 366652998:
+                #    distance = distance + 5
+
                 time = (distance / maxspeed) * 60
                 optimal = 0.5 * distance + 0.5 * time 
 
@@ -146,7 +150,7 @@ def process_form():
                     graph.add_edge(node2, node1, distance=distance, time=time, optimal=optimal)
 
     # Find the shortest path using Dijkstra's algorithm
-    optimal_route_coordinates = find_shortest_path(graph, hotel_coordinates)
+    optimal_route_coordinates = find_shortest_path_neighbour(graph, hotel_coordinates)
     #distance_shortest_path = find_shortest_path(distanceGraph, hotel_coordinates)
 
     return render_template('map.html', optimalLatLngs=optimal_route_coordinates)  #Print on map
