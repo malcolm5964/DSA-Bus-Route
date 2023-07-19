@@ -47,10 +47,13 @@
             //Colors for route
             var colors = ['blue', 'red', 'green', 'purple', 'orange'];
 
+            //Array to store all polylines
+            var polylines = [];
+
             //Loop through LatLngs array and draw each latlng
             for(let i=0; i< optimalLatLngs.length; i++) {
 
-                console.log(optimalLatLngs[i][0][2]);
+                console.log(optimalLatLngs[i][optimalLatLngs[i].length - 1]);
 
                 //Get relevant info from latlng first array
                 var startpoint = optimalLatLngs[i][0][0];
@@ -64,13 +67,28 @@
                     return new google.maps.LatLng(coord[0], coord[1]);
                 });
 
+                var polylineName = 'polyline' + i;
+
                 var polyline = new google.maps.Polyline({
                     path: path,
                     strokeColor: colors[i % colors.length],
-                    strokeWeight: 3
+                    strokeOpacity: 0.9,
+                    strokeWeight: 3,
+                    name: polylineName,
+                    visible: true
                 });
+
+                var marker = new google.maps.Marker({
+                    position: {lat: optimalLatLngs[i][optimalLatLngs[i].length - 1][0], lng: optimalLatLngs[i][optimalLatLngs[i].length - 1][1]},
+                    map: map,
+                    label: (i+1).toString(),
+                    title: 'test'
+                })
             
+                marker.setMap(map)
                 polyline.setMap(map);
+                polylines.push(polyline);
+                console.log(polylines)
 
                 //Inserting route info into offcanvas
                 let offcanvasBody =  document.getElementById("offcanvasBody");
@@ -83,6 +101,7 @@
                         <br>
                         <span class="text-success">${Math.round(time)}min&nbsp;&nbsp;</span>
                         <span class="text-success">${distance.toFixed(1)}KM</span>
+                        <button type="button" class="btn btn-info" id="button${i}" onclick="removePolyline(${i})">Remove</button>
                     </div>
                     <!--Route Detail-->
 
@@ -91,7 +110,25 @@
                     `
 
                     offcanvasBody.innerHTML += routeInfo;   
+
+
+                function removePolyline(index){
+                    let polylineToRemove = polylines.find(polyline => polyline.name == `polyline${index}`);
+                    if(polyline.visible) {
+                        polyline.visible = false;
+                        polylineToRemove.setMap(null);
+                        document.getElementById(`button${index}`).innerText = "Show";
+                    }
+                    else {
+                        polyline.visible = true;
+                        polylineToRemove.setMap(map);
+                        document.getElementById(`button${index}`).innerText = "Remove";
+                    }  
+                }
+
             }
+
+            
 
 
 
