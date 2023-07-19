@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from algorithms import find_shortest_path_permutation, find_shortest_path_neighbour, haversine
+from algorithms import find_shortest_path_permutation, find_shortest_path_neighbour, find_shortest_path_biDirectional, haversine
 import requests
 import networkx as nx
 
@@ -149,9 +149,14 @@ def process_form():
                     graph.add_edge(node1, node2, distance=distance, time=time, optimal=optimal)
                     graph.add_edge(node2, node1, distance=distance, time=time, optimal=optimal)
 
-    # Find the shortest path using Dijkstra's algorithm
-    optimal_route_coordinates = find_shortest_path_neighbour(graph, hotel_coordinates)
-    #distance_shortest_path = find_shortest_path(distanceGraph, hotel_coordinates)
+    #Find shortest path using nearest neighbour with BiDirectional search
+    optimal_route_coordinates = find_shortest_path_biDirectional(graph, hotel_coordinates)
+
+    # Find shortest path using nearest neighbour with Dijkstra's algorithm or A*
+    #optimal_route_coordinates = find_shortest_path_neighbour(graph, hotel_coordinates)
+
+    #Find shortest path with Brute Force and Dijkstra
+    #optimal_route_coordinates = find_shortest_path_permutation(graph, hotel_coordinates)
 
     return render_template('map.html', optimalLatLngs=optimal_route_coordinates)  #Print on map
 
