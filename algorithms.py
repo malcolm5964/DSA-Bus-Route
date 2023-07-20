@@ -85,7 +85,7 @@ def find_shortest_path_permutation(graph, hotel_coordinates):
 
 
 #ALGO 2 Nearest Neighbor Algorithm with Djikstra and A*
-def find_shortest_path_neighbour(graph, hotel_coordinates):
+def find_shortest_path_neighbour(graph, hotel_coordinates, weight):
     num_hotels = len(hotel_coordinates)
     visited = set()
     total_route_coordinates = []
@@ -111,10 +111,10 @@ def find_shortest_path_neighbour(graph, hotel_coordinates):
             if tuple(hotel) not in visited:
                 hotel_node = find_nearest_node(hotel[0], hotel[1], graph)
                 #Djikstra Algorithm
-                #distance = nx.shortest_path_length(graph, currentHotel_node, hotel_node, weight='optimal')
+                #distance = nx.shortest_path_length(graph, currentHotel_node, hotel_node, weight=weight)
 
                 #A* Algorithm
-                distance = nx.astar_path_length(graph, currentHotel_node, hotel_node, heuristic=heuristic_func, weight='optimal')
+                distance = nx.astar_path_length(graph, currentHotel_node, hotel_node, heuristic=heuristic_func, weight=weight)
 
                 if distance < min_distance:
                     min_distance = distance
@@ -124,10 +124,10 @@ def find_shortest_path_neighbour(graph, hotel_coordinates):
         nearestHotel_node = find_nearest_node(nearest_hotel[0], nearest_hotel[1], graph)
 
         #Djikstra Algorithm Get path nodes
-        #optimal_sub_path = nx.shortest_path(graph, currentHotel_node, nearestHotel_node, weight='optimal')
+        #optimal_sub_path = nx.shortest_path(graph, currentHotel_node, nearestHotel_node, weight=weight)
 
         #A* Algorithm Get path nodes
-        route_node = nx.astar_path(graph, currentHotel_node, nearestHotel_node, heuristic=heuristic_func, weight='optimal')
+        route_node = nx.astar_path(graph, currentHotel_node, nearestHotel_node, heuristic=heuristic_func, weight=weight)
 
         #Get time and distance of route
         route_time = get_route_info(graph, route_node, "time")

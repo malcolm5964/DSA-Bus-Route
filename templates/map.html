@@ -26,6 +26,10 @@
             </div>
             <div class="offcanvas-body" id="offcanvasBody">
                 <!--Container to place more routes-->
+                <div id="routeSelectButton">
+                    <button type="button" class="btn btn-success" onclick="showOptimal()">Optimal Route</button>
+                    <button type="button" class="btn btn-danger" onclick="showDistance()">Distance Route</button>
+                </div>
             </div>
         </div>
 
@@ -33,6 +37,7 @@
         <!--Scripts-->
         <script type="text/javascript">
             var optimalLatLngs = {{ optimalLatLngs|safe }};
+            var distanceLatLngs = {{ distanceLatLngs|safe }};
             
             //Set map zoom and position
             var map = new google.maps.Map(document.getElementById('map'), {
@@ -48,34 +53,46 @@
             var colors = ['blue', 'red', 'green', 'purple', 'orange'];
 
             //Array to store all polylines
-            var polylines = [];
+            var optimalPolylines = [];
+            var distancePolylines = [];
 
             //Loop through LatLngs array and draw each latlng
             for(let i=0; i< optimalLatLngs.length; i++) {
-
-                console.log(optimalLatLngs[i][optimalLatLngs[i].length - 1]);
 
                 //Get relevant info from latlng first array
                 var startpoint = optimalLatLngs[i][0][0];
                 var endpoint = optimalLatLngs[i][0][1];
                 var time = optimalLatLngs[i][0][2];
                 var distance = optimalLatLngs[i][0][3];
-                var instructions = ["test", "test2"];
 
                 //Drawing latlng *Slice out first array(use to store route info)
-                var path = optimalLatLngs[i].slice(1).map(function(coord) {
+                var optimalPath = optimalLatLngs[i].slice(1).map(function(coord) {
                     return new google.maps.LatLng(coord[0], coord[1]);
                 });
 
+                var distancePath = distanceLatLngs[i].slice(1).map(function(coord) {
+                    return new google.maps.LatLng(coord[0], coord[1]);
+                });
+
+
                 var polylineName = 'polyline' + i;
 
-                var polyline = new google.maps.Polyline({
-                    path: path,
+                var optimalPolyline = new google.maps.Polyline({
+                    path: optimalPath,
                     strokeColor: colors[i % colors.length],
                     strokeOpacity: 0.9,
                     strokeWeight: 3,
                     name: polylineName,
                     visible: true
+                });
+
+                var distancePolyline = new google.maps.Polyline({
+                    path: distancePath,
+                    strokeColor: colors[i % colors.length],
+                    strokeOpacity: 0.9,
+                    strokeWeight: 3,
+                    name: polylineName,
+                    visible: false
                 });
 
                 var marker = new google.maps.Marker({
@@ -85,13 +102,15 @@
                     title: 'test'
                 })
             
-                marker.setMap(map)
-                polyline.setMap(map);
-                polylines.push(polyline);
-                console.log(polylines)
+                marker.setMap(map);
+                optimalPolyline.setMap(map);
+                optimalPolylines.push(optimalPolyline);
+                distancePolylines.push(distancePolyline);
 
                 //Inserting route info into offcanvas
-                let offcanvasBody =  document.getElementById("offcanvasBody");
+                //let offcanvasBody =  document.getElementById("offcanvasBody");
+                let routeSelectButton = document.getElementById("routeSelectButton");
+
                 let routeInfo = `
                     <!--New route info-->
                     <div>
@@ -109,22 +128,52 @@
                     </div>
                     `
 
-                    offcanvasBody.innerHTML += routeInfo;   
+                routeSelectButton.insertAdjacentHTML('beforebegin', routeInfo);   
 
-
+                //Function to remove individual polyline
                 function removePolyline(index){
-                    let polylineToRemove = polylines.find(polyline => polyline.name == `polyline${index}`);
-                    if(polyline.visible) {
-                        polyline.visible = false;
+                    let polylineToRemove = optimalPolylines.find(polyline => polyline.name == `polyline${index}`);
+                    if(polylineToRemove.visible) {
+                        polylineToRemove.visible = false;
                         polylineToRemove.setMap(null);
                         document.getElementById(`button${index}`).innerText = "Show";
                     }
                     else {
-                        polyline.visible = true;
+                        polylineToRemove.visible = true;
                         polylineToRemove.setMap(map);
                         document.getElementById(`button${index}`).innerText = "Remove";
                     }  
                 }
+
+                //Function to show optimal route
+                function showOptimal(){
+                    distancePolylines.forEach((polyline) => {
+                        if(polyline.visible) {
+                            polyline.visible = false;
+                            polyline.setMap(null);
+                        }
+                    });
+                    optimalPolylines.forEach((polyline) => {
+                        polyline.visible = true;
+                        polyline.setMap(map);
+                    })
+                }
+
+                //Function to show distance route
+                function showDistance(){
+                    optimalPolylines.forEach((polyline) => {
+                        if(polyline.visible) {
+                            polyline.visible = false;
+                            polyline.setMap(null);
+                        }
+                    });
+                    distancePolylines.forEach((polyline) => {
+                        polyline.visible = true;
+                        polyline.setMap(map);
+                    })
+                }                
+
+
 
             }
 
