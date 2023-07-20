@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Template</title>
+    <title>TransitPro</title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css">
 </head>
@@ -14,9 +14,11 @@
 <body>
     <header>
         <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <nav class="navbar navbar-expand-lg navbar-light bg-dark">
             <div class="container">
-                <a class="navbar-brand" href="#">Website Logo</a>
+               <a class="navbar-brand" href="#" style="color: white; font-size:40px;">
+          <img src="{{ url_for('static', filename='/MainLogo.png')}}" alt="TransitPro" style="height: 50px;">
+          TransitPro</a>
                 <!-- Navbar content -->
                 <!-- Add your navigation links here -->
             </div>
@@ -71,10 +73,10 @@
         </div>
     </main>
 
-    <footer>
+     <footer style="background-color: #343a40; color: #ffffff; padding: 10px; text-align: center;">
         <!-- Footer content -->
-        <div class="container">
-            <p>&copy; 2023 Your Website. All rights reserved.</p>
+        <div style="padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);">
+            <p>&copy; 2023 TransitPro. All rights reserved.</p>
         </div>
     </footer>
 

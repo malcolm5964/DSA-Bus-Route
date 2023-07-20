@@ -20,6 +20,9 @@
 
         <!--Off Canvas-->
         <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+             <a href="javascript:history.back()">
+                 <img src="{{ url_for('static', filename='/backBtn.png')}}" alt="Back" style="width: 50px; height: 50px;">
+             </a>
             <div class="offcanvas-header">
               <h5 class="offcanvas-title text-center" id="offcanvasExampleLabel">Routes</h5>
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
