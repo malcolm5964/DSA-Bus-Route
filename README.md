@@ -1,3 +1,3 @@
 # INF1008
 Data Structure project
-![alt text](https://github.com/DeNhAiKal/INF1008/blob/main/static/MainLogo.png | width=100)
+![](https://github.com/DeNhAiKal/INF1008/blob/main/static/MainLogo.png =250x250)
