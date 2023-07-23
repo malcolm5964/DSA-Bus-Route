@@ -81,8 +81,8 @@ def process_form():
     
 
     #Find shortest path using nearest neighbour with BiDirectional search
-    #optimal_route_coordinates = find_shortest_path_biDirectional(graph, hotel_coordinates, "optimal")
-    #distance_route_coordinates = find_shortest_path_biDirectional(graph, hotel_coordinates, "distance")
+    optimal_route_coordinates = find_shortest_path_biDirectional(graph, hotel_coordinates, "optimal")
+    distance_route_coordinates = find_shortest_path_biDirectional(graph, hotel_coordinates, "distance")
 
     # Find shortest path using nearest neighbour with Dijkstra's algorithm or A*
     #optimal_route_coordinates = find_shortest_path_neighbour(graph, hotel_coordinates, "optimal")
@@ -90,8 +90,8 @@ def process_form():
 
 
     #Find shortest path with Brute Force and Dijkstra
-    optimal_route_coordinates = find_shortest_path_permutation(graph, hotel_coordinates, "optimal")
-    distance_route_coordinates = find_shortest_path_permutation(graph, hotel_coordinates, "distance")
+    #optimal_route_coordinates = find_shortest_path_permutation(graph, hotel_coordinates, "optimal")
+    #distance_route_coordinates = find_shortest_path_permutation(graph, hotel_coordinates, "distance")
 
     return render_template('map.html', optimalLatLngs=optimal_route_coordinates, distanceLatLngs=distance_route_coordinates)  #Print on map
 
