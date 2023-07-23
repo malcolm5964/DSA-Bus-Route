@@ -2,6 +2,20 @@ import requests
 import networkx as nx
 from algorithms import haversine
 import pickle
+import datetime
+
+
+def is_erp_time(start_time, end_time, check_time):
+    # Convert the time strings to datetime objects
+    start_datetime = datetime.datetime.strptime(start_time, '%H:%M')
+    end_datetime = datetime.datetime.strptime(end_time, '%H:%M')
+    check_datetime = datetime.datetime.strptime(check_time, '%H:%M')
+    
+    # Check if the check_time is between start_time and end_time
+    if start_datetime <= check_datetime <= end_datetime:
+        return True
+    else:
+        return False    
 
 def createGraph():
     # Approximate coordinates for Singapore's bounding box
@@ -25,16 +39,6 @@ def createGraph():
     """.format(south=south, west=west, north=north, east=east)
     response = requests.get("https://overpass-api.de/api/interpreter", params={"data": overpass_query})
     data = response.json()
-    #Get speed bands
-    traffic_flow_url = f"http://datamall2.mytransport.sg/ltaodataservice/v3/TrafficSpeedBands"
-    headers = {
-        "Accept": "application/json",
-        "AccountKey": "BGf/iejfQ5+fOqFxkbLPuA=="
-    }
-
-    response = requests.get(traffic_flow_url, headers=headers)
-    traffic_flow_data = response.json()
-    traffic_flow_data = traffic_flow_data['value']
 
     #BUILDING graph
     graph = nx.DiGraph()
@@ -64,10 +68,18 @@ def createGraph():
                 lat2, lon2 = graph.nodes[node2]['pos']
                 #Get distance, time and optimal for edge
                 distance = haversine(lon1, lat1, lon2, lat2)
+                #Calculate time before adding addtional distance(ERP)
+                time = (distance / maxspeed) * 60
                 #Add ERP cost
                 if node1 == 1196689060 and node2 == 5918708421:
-                    distance = distance + 5
-                time = (distance / maxspeed) * 60
+                    current_time = datetime.datetime.now().strftime('%H:%M')
+                    start_time = '07:30'
+                    end_time = '09:00'
+                    if is_erp_time(start_time, end_time, current_time):
+                        additionalDistance = 2
+                    distance = distance + additionalDistance
+                
+                #Get optimal value
                 optimal = 0.5 * distance + 0.5 * time 
 
                 if oneway == "yes":

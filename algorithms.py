@@ -2,6 +2,7 @@ import itertools
 from itertools import permutations
 import math
 import networkx as nx
+import heapq
 
 #Calculate distance between 2 coordinate
 def haversine(lon1, lat1, lon2, lat2):
@@ -42,7 +43,7 @@ def get_route_info(graph, optimal_sub_path, type):
 
 # ALGO 1 Create all permutation and find the shortest route
 #Finding shortest route use djikstra algo
-def find_shortest_path_permutation(graph, hotel_coordinates):
+def find_shortest_path_permutation(graph, hotel_coordinates, weight):
     num_hotels = len(hotel_coordinates)
     shortest_total_route_coordinates = []  #[[Hotel1 to Hotel2 latlng][Hotel2 to Hotel3 latlng]....]
     shortest_route = float('inf')
@@ -63,9 +64,9 @@ def find_shortest_path_permutation(graph, hotel_coordinates):
             if nx.has_path(graph, hotel1_node, hotel2_node):
 
                 #calculate shortest path with djikstra algo
-                route_distance += nx.shortest_path_length(graph, hotel1_node, hotel2_node, weight='optimal') 
+                route_distance += nx.shortest_path_length(graph, hotel1_node, hotel2_node, weight=weight) 
                 #Return the nodes that make shortest path
-                route_nodes = nx.shortest_path(graph, hotel1_node, hotel2_node, weight='optimal') 
+                route_nodes = nx.shortest_path(graph, hotel1_node, hotel2_node, weight=weight) 
                 #Get the distance and time for route
                 optimal_distance = get_route_info(graph, route_nodes, "distance") 
                 optimal_time = get_route_info(graph, route_nodes, "time")
@@ -103,9 +104,7 @@ def find_shortest_path_neighbour(graph, hotel_coordinates, weight):
         visited.add(tuple(current_hotel))
         nearest_hotel = None
         min_distance = float('inf')
-
         currentHotel_node = find_nearest_node(current_hotel[0], current_hotel[1], graph)
-
 
         for hotel in hotel_coordinates:
             if tuple(hotel) not in visited:
@@ -142,50 +141,46 @@ def find_shortest_path_neighbour(graph, hotel_coordinates, weight):
         #Change the current hotel to nearest hotel
         current_hotel = nearest_hotel 
         
-
     return total_route_coordinates
 
 
 
 #ALGO 3 Nearest Neighbor Algorithm with Bidirectional search
-def bidirectional_search(graph, source, target):
-    forward_queue = [(source, None)]
-    backward_queue = [(target, None)]
-    forward_visited = {source: None}
-    backward_visited = {target: None}
+def bidirectional_a_star(graph, source, target, heuristic, weight):
+    forward_queue = [(0, source, None)]
+    backward_queue = [(0, target, None)]
+    forward_visited = {source: (0, None)}
+    backward_visited = {target: (0, None)}
     common_node = None
 
     while forward_queue and backward_queue:
-        forward_node, forward_parent = forward_queue.pop(0)
-        backward_node, backward_parent = backward_queue.pop(0)
-        forward_neighbors = graph.neighbors(forward_node)
-        backward_neighbors = graph.predecessors(backward_node)
+        _, forward_node, _ = heapq.heappop(forward_queue)
+        _, backward_node, _ = heapq.heappop(backward_queue)
 
-        for neighbor in forward_neighbors:
-            if neighbor not in forward_visited:
-                forward_visited[neighbor] = forward_node
-                forward_queue.append((neighbor, forward_node))
-            if neighbor in backward_visited:
-                common_node = neighbor
-                break
-
-        for neighbor in backward_neighbors:
-            if neighbor not in backward_visited:
-                backward_visited[neighbor] = backward_node
-                backward_queue.append((neighbor, backward_node))
-            if neighbor in forward_visited:
-                common_node = neighbor
-                break
-
-        if common_node:
+        if forward_node in backward_visited or backward_node in forward_visited:
+            common_node = forward_node if forward_node in backward_visited else backward_node
             break
+
+        for neighbor in graph.neighbors(forward_node):
+            new_cost = forward_visited[forward_node][0] + graph[forward_node][neighbor][weight]
+            if neighbor not in forward_visited or new_cost < forward_visited[neighbor][0]:
+                forward_priority = new_cost + heuristic(neighbor, target)
+                forward_visited[neighbor] = (new_cost, forward_node)
+                heapq.heappush(forward_queue, (forward_priority, neighbor, forward_node))
+
+        for neighbor in graph.predecessors(backward_node):
+            new_cost = backward_visited[backward_node][0] + graph[neighbor][backward_node][weight]
+            if neighbor not in backward_visited or new_cost < backward_visited[neighbor][0]:
+                backward_priority = new_cost + heuristic(neighbor, source)
+                backward_visited[neighbor] = (new_cost, backward_node)
+                heapq.heappush(backward_queue, (backward_priority, neighbor, backward_node))
 
     if common_node:
         forward_path = []
         node = common_node
         while node != source:
             forward_path.append(node)
-            node = forward_visited[node]
+            node = forward_visited[node][1]
         forward_path.append(source)
         forward_path.reverse()
 
@@ -193,7 +188,7 @@ def bidirectional_search(graph, source, target):
         node = common_node
         while node != target:
             backward_path.append(node)
-            node = backward_visited[node]
+            node = backward_visited[node][1]
         backward_path.append(target)
 
         final_path = forward_path + backward_path[1:]  # Combine paths, excluding common node
@@ -201,12 +196,20 @@ def bidirectional_search(graph, source, target):
 
     return None
 
-def find_shortest_path_biDirectional(graph, hotel_coordinates):
+def find_shortest_path_biDirectional(graph, hotel_coordinates, weight):
     num_hotels = len(hotel_coordinates)
     visited = set()
     total_route_coordinates = []         #Store all the subroute to form complete route
     current_hotel = hotel_coordinates[0] #Store start hotel
 
+    #Get the  straight-line distance between 2 nodes base on coordinates in graph
+    def heuristic_func(node1, node2):
+        x1, y1 = graph.nodes[node1]['pos']
+        x2, y2 = graph.nodes[node2]['pos']
+        dx = x2 - x1
+        dy = y2 - y1
+        return math.sqrt(dx*dx + dy*dy)
+    
     while len(visited) < num_hotels-1:
         visited.add(tuple(current_hotel))
         nearest_hotel = None #Store nearest hotel from start hotel
@@ -221,8 +224,9 @@ def find_shortest_path_biDirectional(graph, hotel_coordinates):
                 hotel_node = find_nearest_node(hotel[0], hotel[1], graph)
 
                 #Bidirectional Algorithm
-                route = bidirectional_search(graph, currentHotel_node, hotel_node) #Return the nodes in the route
-                distance = get_route_info(graph, route, "optimal")
+                #route = bidirectional_search(graph, currentHotel_node, hotel_node) #Return the nodes in the route
+                route = bidirectional_a_star(graph, currentHotel_node, hotel_node, heuristic_func, weight)
+                distance = get_route_info(graph, route, weight)
 
                 if distance < min_distance:
                     route_nodes = route
