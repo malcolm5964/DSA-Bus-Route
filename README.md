@@ -23,8 +23,11 @@
 * [Python 3.7](https://docs.python.org/3.7/) - Language used
 * [Flask](https://flask.palletsprojects.com/en/1.1.x/) - The web framework used
 * [Overpass API](https://www.geofabrik.de/data/overpass-api.html) - Provides access to OpenStreetMap(OSM) data
+* ![image](https://github.com/user-attachments/assets/5f899633-3484-42a8-8e4b-f6f430855576)![image](https://github.com/user-attachments/assets/10e0ae79-23a8-4cb9-9d12-4a59df4b8295)
+
+
 * [Google Map API](https://developers.google.com/maps/documentation) - Used to create a map displaying the routes for the hotels picked by the user.
-* [NetworkX](https://networkx.org/documentation/stable/reference/introduction.html) - Used to create graphs to calculate the routes
+* [NetworkX](https://networkx.org/documentation/stable/reference/introduction.html) - Used to create graphs to calculate the routes (1. Add 'node' to graph 2. Add edge to graph base on 'way' data)
 
 ---
 
